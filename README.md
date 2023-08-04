@@ -11,7 +11,7 @@ Welcome to my fork of WireMock! This repository extends the capabilities of the 
 
 ## Features
 
-- **Dynamic Responses**: With the added JavaScript execution feature, you can define dynamic responses for your mock endpoints. By including JavaScript scripts in your stub definitions, you can generate custom responses based on the request context, parameters, or any other criteria you define.
+- **Dynamic Responses**: By including JavaScript scripts in your stub definitions, you can generate custom responses based on the request context, parameters, or any other criteria you define.
 
 
 ## Usage
