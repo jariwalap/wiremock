@@ -1,4 +1,4 @@
-# WireMock - flexible and open source API mocking
+# WireMock with Dynamic Response Support
 
 <p align="center">
     <a href="https://wiremock.org" target="_blank">
@@ -6,60 +6,91 @@
     </a>
 </p>
 
-[![Build Status](https://github.com/tomakehurst/wiremock/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/tomakehurst/wiremock/actions/workflows/build-and-test.yml)
-[![Docs](https://img.shields.io/static/v1?label=Documentation&message=public&color=green)](https://wiremock.org/docs/)
-[![a](https://img.shields.io/badge/slack-Join%20us-brightgreen?style=flat&logo=slack)](https://slack.wiremock.org/)
-[![Participate](https://img.shields.io/static/v1?label=Contributing&message=guide&color=orange)](./CONTRIBUTING.md)
-[![Maven Central](https://img.shields.io/maven-central/v/com.github.tomakehurst/wiremock-jre8.svg)](https://search.maven.org/artifact/com.github.tomakehurst/wiremock-jre8)
 
-WireMock is a popular open-source tool for API mock testing with over 5 million downloads per month.
-It can help you to create stable test and development environments,
-isolate yourself from flakey 3rd parties and simulate APIs that don’t exist yet.
+Welcome to my fork of WireMock! This repository extends the capabilities of the official WireMock project by introducing dynamic response support through JavaScript execution. This allows you to create more versatile and flexible mock endpoints that can generate responses on-the-fly using JavaScript.
 
-Started in 2011 as a Java library by [Tom Akehurst](https://github.com/tomakehurst),
-now WireMock spans across multiple programming languages and technology stacks.
-It can run as a library or client wrapper in many languages, or as a standalone server.
-There is a big community behind the project and its ecosystem.
+## Features
 
-WireMock supports several approaches for creating mock APIs -
-in code, via its REST API, as JSON files and by recording HTTP traffic proxied to another destination.
-WireMock has a rich matching system, allowing any part of an incoming request to be matched against complex and precise criteria.
-Responses of any complexity can be dynamically generated via the Handlebars based templating system.
-Finally, WireMock is easy to integrate into any workflow due to its numerous extension points and comprehensive APIs.
+- **Dynamic Responses**: With the added JavaScript execution feature, you can define dynamic responses for your mock endpoints. By including JavaScript scripts in your stub definitions, you can generate custom responses based on the request context, parameters, or any other criteria you define.
 
-## Key Features
+## Getting Started
 
-WireMock can run in unit tests, as a standalone process or a container.
-Key features include:
+To get started with this enhanced version of WireMock, follow these steps:
 
-- HTTP response stubbing, matchable on URL, header and body content patterns
-- Configuration via a fluent Java API, JSON files and JSON over HTTP
-- Record/playback of stubs
-- Request verification
-- Fault and response delays injection
-- Per-request conditional proxying
-- Browser proxying for request inspection and replacement
-- Stateful behaviour simulation
-- Extensibility
+1. Clone or fork this repository to your local machine.
+2. Build and run the modified WireMock server using the provided build instructions.
 
-Full documentation can be found at [wiremock.org/docs](https://wiremock.org/docs).
+## Usage
 
-## Questions and Issues
+#### Changes in stub
 
-If you have a question about WireMock, or are experiencing a problem you're not sure is a bug please post a message to the
-[WireMock Community Slack](https://slack.wiremock.org) in the `#help` channel.
+   1. Define your stub mappings as usual using JSON format.
+   2. Add a new field in response stub mapping `is_script: true` , 
+   3. Mention your script file name via field `bodyFileName`
 
-On the other hand if you're pretty certain you've found a bug please open an issue.
+Example:
 
-## Log4j Notice
+```json
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/api/tracking/v2/order(.*)"
+  },
+  "response": {
+    "status": 200,
+    "fixedDelayMilliseconds": 2,
+    "is_script": true,
+    "bodyFileName": "response-script.js",
+    "headers": {
+      "content-type": "application/json"
+    }
+  }
+}
+```
 
-WireMock only uses log4j in its test dependencies. Neither the thin nor standalone JAR depends on or embeds log4j, so
-you can continue to use WireMock 2.32.0 and above without any risk of exposure to the recently discovered vulnerability.
+#### Changes in configmap 
 
-## Contributing
+1. Create a new configmap for defining your script and ensure this script name is same as defined above and is mounted on path `/var/wiremock/__files` of your WIREMOCK container
 
-WireMock exists and continues to thrive due to the efforts of contributors.
-Regardless of your expertise and time you could dedicate,
-there're opportunities to participate and help the project!
+Example:
 
-See the [Contributing Guide](./CONTRIBUTING.md) for more information.
+`NEW CONFIGMAP`
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: default
+  labels:
+    name: "{{ .Values.app }}-{{ .Values.country }}-files"
+  name: "{{ .Values.app }}-{{ .Values.country }}-files"
+data:
+  response-script.js: |-
+    function getResponseData() {
+        var timestamp = new Date();
+        timestamp.setMinutes(timestamp.getMinutes() + 5)
+        return {
+            "promised_delivery_at": timestamp.toISOString(),
+            "model_prediction_lower_bound_minutes": 5,
+            "model_prediction_median_bound_minutes": 10,
+            "model_prediction_upper_bound_minutes": 15,
+            "model_prediction_dispatch_remaining_time": 0,
+            "model_prediction_lower_bound_timestamp": "2023-07-28T17:50:00+08:00",
+            "model_prediction_median_bound_timestamp": "2023-07-28T17:54:03.898+08:00",
+            "model_prediction_upper_bound_timestamp": "2023-07-28T17:55:00+08:00",
+            "deliveries": [{"id": 124962444}]
+        };
+    }
+
+    function getDynamicResponse() {
+        var responseData = getResponseData();
+        return JSON.stringify(responseData);
+    }
+
+    getDynamicResponse()
+
+```
+
+# Contributions
+
+If you find this dynamic response feature useful or have ideas for further enhancements, feel free to contribute or reach out to me - `pranav.jariwala@deliveryhero.com`, or provide feedback in the GitHub repository
