@@ -15,20 +15,22 @@
  */
 package com.github.tomakehurst.wiremock.stubbing;
 
-import static com.google.common.collect.FluentIterable.from;
-import static java.util.stream.Collectors.toSet;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.tomakehurst.wiremock.common.Errors;
 import com.github.tomakehurst.wiremock.common.InvalidInputException;
 import com.github.tomakehurst.wiremock.common.Json;
-import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
-import java.util.*;
+
+import java.util.Collections;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.google.common.collect.FluentIterable.from;
+import static java.util.stream.Collectors.toSet;
 
 public class Scenario {
 
@@ -72,26 +74,14 @@ public class Scenario {
   }
 
   public Set<String> getPossibleStates() {
-    FluentIterable<String> requiredStates =
-        from(stubMappings)
-            .transform(
-                new Function<StubMapping, String>() {
-                  @Override
-                  public String apply(StubMapping mapping) {
-                    return mapping.getRequiredScenarioState();
-                  }
-                });
+    Stream<String> requiredStates =
+            stubMappings.stream().map(StubMapping::getRequiredScenarioState);
 
     return from(stubMappings)
         .transform(
-            new Function<StubMapping, String>() {
-              @Override
-              public String apply(StubMapping mapping) {
-                return mapping.getNewScenarioState();
-              }
-            })
-        .append(requiredStates)
-        .filter(Predicates.notNull())
+                StubMapping::getNewScenarioState)
+        .append(requiredStates.collect(Collectors.toList()))
+        .filter(Objects::nonNull)
         .toSet();
   }
 

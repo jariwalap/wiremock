@@ -195,10 +195,6 @@ public abstract class AbstractFileSource implements FileSource {
   }
 
   public static Predicate<BinaryFile> byFileExtension(final String extension) {
-    return new Predicate<BinaryFile>() {
-      public boolean apply(BinaryFile input) {
-        return input.name().endsWith("." + extension);
-      }
-    };
+    return input -> input.name().endsWith("." + extension);
   }
 }

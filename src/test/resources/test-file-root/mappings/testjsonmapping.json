@@ -5,6 +5,7 @@
   },
   "response": {
     "headers": {"Content-Type": "application/json"},
+    "is_script": false,
     "jsonBody": {
       "bignumber": 1234567890.12,
       "array": [

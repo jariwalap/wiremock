@@ -125,6 +125,7 @@ public class StubResponseRendererTest {
             null,
             null,
             null,
-            true));
+            true,
+               false ));
   }
 }

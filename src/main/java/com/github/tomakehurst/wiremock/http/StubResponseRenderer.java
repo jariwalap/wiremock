@@ -27,7 +27,12 @@ import com.github.tomakehurst.wiremock.store.SettingsStore;
 import com.github.tomakehurst.wiremock.store.files.BlobStoreFileSource;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.stubbing.StubMapping;
+import com.google.common.collect.Maps;
+
+import javax.script.*;
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public class StubResponseRenderer implements ResponseRenderer {
 
@@ -36,6 +41,8 @@ public class StubResponseRenderer implements ResponseRenderer {
   private final SettingsStore settingsStore;
   private final ProxyResponseRenderer proxyResponseRenderer;
   private final List<ResponseTransformer> responseTransformers;
+
+  private Map<String, String> responseScriptNameVsContent;
 
   public StubResponseRenderer(
       BlobStore filesBlobStore,
@@ -48,6 +55,7 @@ public class StubResponseRenderer implements ResponseRenderer {
     this.responseTransformers = responseTransformers;
 
     filesFileSource = new BlobStoreFileSource(filesBlobStore);
+    responseScriptNameVsContent = Maps.newHashMap();
   }
 
   @Override
@@ -124,9 +132,13 @@ public class StubResponseRenderer implements ResponseRenderer {
             .chunkedDribbleDelay(responseDefinition.getChunkedDribbleDelay());
 
     if (responseDefinition.specifiesBodyFile()) {
-      final InputStreamSource bodyStreamSource =
-          filesBlobStore.getStreamSource(responseDefinition.getBodyFileName());
-      responseBuilder.body(bodyStreamSource);
+      if (responseDefinition.isResponseBodyAScript()){
+        executeScriptAndGenerateResponse(responseDefinition, responseBuilder);
+      }else {
+        final InputStreamSource bodyStreamSource =
+                filesBlobStore.getStreamSource(responseDefinition.getBodyFileName());
+        responseBuilder.body(bodyStreamSource);
+      }
     } else if (responseDefinition.specifiesBodyContent()) {
       if (responseDefinition.specifiesBinaryBodyContent()) {
         responseBuilder.body(responseDefinition.getByteBody());
@@ -136,5 +148,42 @@ public class StubResponseRenderer implements ResponseRenderer {
     }
 
     return responseBuilder;
+  }
+
+  private void executeScriptAndGenerateResponse(ResponseDefinition responseDefinition, Response.Builder responseBuilder) {
+    //start script engine
+    ScriptEngineManager engineManager = new ScriptEngineManager();
+    ScriptEngine engine = engineManager.getEngineByName("nashorn");
+    try {
+      addRequestToScriptContext(responseDefinition, engine);
+      // Evaluate the JavaScript code
+      var response = executeScript(responseDefinition, engine);
+      responseBuilder.body(response.toString());
+    } catch (ScriptException | IOException e) {
+      throw new RuntimeException(e.getMessage());
+    }
+  }
+
+  private Object executeScript(ResponseDefinition responseDefinition, ScriptEngine engine) throws ScriptException, IOException {
+    if (responseScriptNameVsContent.containsKey(responseDefinition.getBodyFileName())){
+      return engine.eval(responseScriptNameVsContent.get(responseDefinition.getBodyFileName()));
+    } else {
+      String script = loadScript(responseDefinition);
+      return engine.eval(script);
+    }
+  }
+
+  private static void addRequestToScriptContext(ResponseDefinition responseDefinition, ScriptEngine engine) {
+    Bindings bindings = engine.createBindings();
+    bindings.put("request", responseDefinition.getOriginalRequest());
+    engine.setBindings(bindings, ScriptContext.ENGINE_SCOPE);
+  }
+
+  private String loadScript(ResponseDefinition responseDefinition) throws IOException {
+    InputStreamSource bodyStreamSource =
+            filesBlobStore.getStreamSource(responseDefinition.getBodyFileName());
+    String script = new String(bodyStreamSource.getStream().readAllBytes());
+    responseScriptNameVsContent.put(responseDefinition.getBodyFileName(), script);
+    return script;
   }
 }

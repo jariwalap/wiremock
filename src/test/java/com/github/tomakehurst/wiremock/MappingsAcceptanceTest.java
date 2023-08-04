@@ -40,7 +40,7 @@ public class MappingsAcceptanceTest extends AcceptanceTestBase {
   public void basicMappingCheckNonUtf8() {
     testClient.addResponse(MappingJsonSamples.MAPPING_REQUEST_FOR_NON_UTF8, "GB2312");
 
-    WireMockResponse response = testClient.get("/test/nonutf8/");
+    WireMockResponse response = testClient.get("/pranav");
 
     assertThat(response.statusCode(), is(200));
     assertThat(response.content(), is("国家标准"));

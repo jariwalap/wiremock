@@ -45,6 +45,7 @@ public class ResponseDefinitionBuilder {
   protected List<String> responseTransformerNames;
   protected Map<String, Object> transformerParameters = newHashMap();
   protected Boolean wasConfigured = true;
+  protected Boolean isScript = false;
 
   public static ResponseDefinitionBuilder like(ResponseDefinition responseDefinition) {
     ResponseDefinitionBuilder builder = new ResponseDefinitionBuilder();
@@ -68,6 +69,7 @@ public class ResponseDefinitionBuilder {
             ? Parameters.from(responseDefinition.getTransformerParameters())
             : Parameters.empty();
     builder.wasConfigured = responseDefinition.isFromConfiguredStub();
+    builder.isScript = responseDefinition.isResponseBodyAScript();
 
     if (builder.proxyBaseUrl != null) {
       ProxyResponseDefinitionBuilder proxyResponseDefinitionBuilder = new ProxyResponseDefinitionBuilder(builder);
@@ -290,6 +292,7 @@ public class ResponseDefinitionBuilder {
         fault,
         responseTransformerNames,
         transformerParameters,
-        wasConfigured);
+        wasConfigured,
+        isScript);
   }
 }

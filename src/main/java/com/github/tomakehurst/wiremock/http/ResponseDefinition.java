@@ -50,6 +50,7 @@ public class ResponseDefinition {
   private final Fault fault;
   private final List<String> transformers;
   private final Parameters transformerParameters;
+  private Boolean isScript;
 
   private String browserProxyUrl;
   private Boolean wasConfigured = true;
@@ -73,7 +74,8 @@ public class ResponseDefinition {
       @JsonProperty("fault") Fault fault,
       @JsonProperty("transformers") List<String> transformers,
       @JsonProperty("transformerParameters") Parameters transformerParameters,
-      @JsonProperty("fromConfiguredStub") Boolean wasConfigured) {
+      @JsonProperty("fromConfiguredStub") Boolean wasConfigured,
+      @JsonProperty("is_script") Boolean isScript) {
     this(
         status,
         statusMessage,
@@ -89,7 +91,8 @@ public class ResponseDefinition {
         fault,
         transformers,
         transformerParameters,
-        wasConfigured);
+        wasConfigured,
+        isScript);
   }
 
   public ResponseDefinition(
@@ -125,7 +128,8 @@ public class ResponseDefinition {
         fault,
         transformers,
         transformerParameters,
-        wasConfigured);
+        wasConfigured,
+        false);
   }
 
   public ResponseDefinition(
@@ -143,7 +147,8 @@ public class ResponseDefinition {
       Fault fault,
       List<String> transformers,
       Parameters transformerParameters,
-      Boolean wasConfigured) {
+      Boolean wasConfigured,
+      Boolean isScript) {
     this.status = status > 0 ? status : 200;
     this.statusMessage = statusMessage;
 
@@ -160,7 +165,8 @@ public class ResponseDefinition {
     this.fault = fault;
     this.transformers = transformers;
     this.transformerParameters = transformerParameters;
-    this.wasConfigured = wasConfigured == null ? true : wasConfigured;
+    this.wasConfigured = wasConfigured == null || wasConfigured;
+    this.isScript = isScript != null ? isScript: false;
   }
 
   public ResponseDefinition(final int statusCode, final String bodyContent) {
@@ -179,7 +185,8 @@ public class ResponseDefinition {
         null,
         Collections.<String>emptyList(),
         Parameters.empty(),
-        true);
+        true,
+         false);
   }
 
   public ResponseDefinition(final int statusCode, final byte[] bodyContent) {
@@ -198,7 +205,8 @@ public class ResponseDefinition {
         null,
         Collections.<String>emptyList(),
         Parameters.empty(),
-        true);
+        true,
+            false);
   }
 
   public ResponseDefinition() {
@@ -217,7 +225,8 @@ public class ResponseDefinition {
         null,
         Collections.<String>emptyList(),
         Parameters.empty(),
-        true);
+        true,
+            false);
   }
 
   public static ResponseDefinition notFound() {
@@ -312,7 +321,8 @@ public class ResponseDefinition {
             this.fault,
             this.transformers,
             this.transformerParameters,
-            this.wasConfigured);
+            this.wasConfigured,
+                this.isScript);
     return newResponseDef;
   }
 
@@ -375,6 +385,10 @@ public class ResponseDefinition {
 
   public Boolean isFromConfiguredStub() {
     return wasConfigured == null || wasConfigured ? null : false;
+  }
+
+  public Boolean isResponseBodyAScript(){
+    return isScript != null && isScript;
   }
 
   public Integer getFixedDelayMilliseconds() {

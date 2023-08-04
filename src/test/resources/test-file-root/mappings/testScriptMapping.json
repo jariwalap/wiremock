@@ -1,0 +1,11 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPattern": "/pranav"
+  },
+  "response": {
+    "bodyFileName": "test-script.js",
+    "status": 200,
+    "is_script": true
+  }
+}

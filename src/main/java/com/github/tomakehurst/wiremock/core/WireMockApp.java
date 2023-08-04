@@ -205,12 +205,7 @@ public class WireMockApp implements StubServer, Admin {
   private List<RequestFilter> getAdminRequestFilters() {
     return FluentIterable.from(options.extensionsOfType(RequestFilter.class).values())
         .filter(
-            new Predicate<RequestFilter>() {
-              @Override
-              public boolean apply(RequestFilter filter) {
-                return filter.applyToAdmin();
-              }
-            })
+                filter -> filter.applyToAdmin())
         .toList();
   }
 
