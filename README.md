@@ -22,6 +22,11 @@ To get started with this enhanced version of WireMock, follow these steps:
 
 ## Usage
 
+
+#### Changes in Deployment.yaml
+
+1. Replace the image with `jariwalapranav/wiremock` and `imagePullPolicy` to `ALWAYS`
+
 #### Changes in stub
 
    1. Define your stub mappings as usual using JSON format.
