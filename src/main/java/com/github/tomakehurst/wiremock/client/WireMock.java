@@ -15,11 +15,10 @@
  */
 package com.github.tomakehurst.wiremock.client;
 
+import static com.github.tomakehurst.wiremock.common.ContentTypes.CONTENT_TYPE;
+import static com.github.tomakehurst.wiremock.common.ContentTypes.LOCATION;
 import static com.github.tomakehurst.wiremock.matching.RequestPattern.thatMatch;
 import static com.github.tomakehurst.wiremock.matching.RequestPatternBuilder.allRequests;
-import static com.google.common.collect.FluentIterable.from;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.common.net.HttpHeaders.LOCATION;
 
 import com.github.tomakehurst.wiremock.admin.model.ListStubMappingsResult;
 import com.github.tomakehurst.wiremock.admin.model.ServeEventQuery;
@@ -34,6 +33,7 @@ import com.github.tomakehurst.wiremock.http.DelayDistribution;
 import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.matching.*;
+import com.github.tomakehurst.wiremock.recording.RecordSpec;
 import com.github.tomakehurst.wiremock.recording.RecordSpecBuilder;
 import com.github.tomakehurst.wiremock.recording.RecordingStatusResult;
 import com.github.tomakehurst.wiremock.recording.SnapshotRecordResult;
@@ -267,7 +267,7 @@ public class WireMock {
   }
 
   public static MatchesXPathPattern matchingXPath(String value) {
-    return new MatchesXPathPattern(value, Collections.<String, String>emptyMap());
+    return new MatchesXPathPattern(value, Collections.emptyMap());
   }
 
   public static StringValuePattern matchingXPath(String value, Map<String, String> namespaces) {
@@ -649,6 +649,10 @@ public class WireMock {
     return delete(urlEqualTo(url));
   }
 
+  public static MappingBuilder patch(String url) {
+    return patch(urlEqualTo(url));
+  }
+
   public static ResponseDefinitionBuilder created() {
     return aResponse().withStatus(201);
   }
@@ -717,7 +721,7 @@ public class WireMock {
     if (requestPattern.hasInlineCustomMatcher()) {
       List<LoggedRequest> requests =
           admin.findRequestsMatching(RequestPattern.everything()).getRequests();
-      actualCount = from(requests).filter(thatMatch(requestPattern)).size();
+      actualCount = (int) requests.stream().filter(thatMatch(requestPattern)).count();
     } else {
       VerificationResult result = admin.countRequestsMatching(requestPattern);
       result.assertRequestJournalEnabled();
@@ -734,7 +738,7 @@ public class WireMock {
   private VerificationException verificationExceptionForNearMisses(
       RequestPatternBuilder requestPatternBuilder, RequestPattern requestPattern) {
     List<NearMiss> nearMisses = findAllNearMissesFor(requestPatternBuilder);
-    if (nearMisses.size() > 0) {
+    if (!nearMisses.isEmpty()) {
       Diff diff = new Diff(requestPattern, nearMisses.get(0).getRequest());
       return VerificationException.forUnmatchedRequestPattern(diff);
     }
@@ -839,6 +843,10 @@ public class WireMock {
 
   public static RequestPatternBuilder anyRequestedFor(UrlPattern urlPattern) {
     return new RequestPatternBuilder(RequestMethod.ANY, urlPattern);
+  }
+
+  public static RequestPatternBuilder requestedFor(String method, UrlPattern urlPattern) {
+    return new RequestPatternBuilder(RequestMethod.fromString(method), urlPattern);
   }
 
   public static RequestPatternBuilder requestMadeFor(
@@ -959,12 +967,20 @@ public class WireMock {
     defaultInstance.get().startStubRecording(targetBaseUrl);
   }
 
+  public static void startRecording() {
+    defaultInstance.get().startStubRecording();
+  }
+
   public static void startRecording(RecordSpecBuilder spec) {
     defaultInstance.get().startStubRecording(spec);
   }
 
   public void startStubRecording(String targetBaseUrl) {
     admin.startRecording(targetBaseUrl);
+  }
+
+  public void startStubRecording() {
+    admin.startRecording(RecordSpec.DEFAULTS);
   }
 
   public void startStubRecording(RecordSpecBuilder spec) {

@@ -109,6 +109,7 @@ public class Jetty11HttpServer extends JettyHttpServer {
         super.createHandler(options, adminRequestHandler, stubRequestHandler);
 
     if (options.browserProxySettings().enabled()) {
+      handler.prependHandler(new HttpsProxyDetectingHandler(mitmProxyConnector));
       handler.prependHandler(new ManInTheMiddleSslConnectHandler(mitmProxyConnector));
     }
 
@@ -152,7 +153,8 @@ public class Jetty11HttpServer extends JettyHttpServer {
           new NetworkTrafficServerConnector(jettyServer, null, null, null, 2, 2, ssl, http);
 
       mitmProxyConnector.setPort(0);
-      mitmProxyConnector.setShutdownIdleTimeout(jettySettings.getShutdownIdleTimeout().or(100L));
+      mitmProxyConnector.setShutdownIdleTimeout(
+          jettySettings.getShutdownIdleTimeout().orElse(100L));
 
       jettyServer.addConnector(mitmProxyConnector);
     }

@@ -18,7 +18,7 @@ package com.github.tomakehurst.wiremock.client;
 import static com.github.tomakehurst.wiremock.common.Exceptions.throwUnchecked;
 import static com.github.tomakehurst.wiremock.common.HttpClientUtils.getEntityAsStringAndCloseStream;
 import static com.github.tomakehurst.wiremock.security.NoClientAuthenticator.noClientAuthenticator;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 import static org.apache.hc.core5.http.HttpHeaders.HOST;
 
 import com.github.tomakehurst.wiremock.admin.*;
@@ -51,6 +51,7 @@ import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.classic.methods.HttpPut;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.core5.http.ClassicHttpRequest;
@@ -154,18 +155,21 @@ public class HttpAdminClient implements Admin {
 
   @Override
   public void editStubMapping(StubMapping stubMapping) {
-    postJsonAssertOkAndReturnBody(urlFor(OldEditStubMappingTask.class), Json.write(stubMapping));
+    putJsonAssertOkAndReturnBody(
+        urlFor(EditStubMappingTask.class, PathParams.single("id", stubMapping.getId().toString())),
+        Json.write(stubMapping));
   }
 
   @Override
   public void removeStubMapping(StubMapping stubbMapping) {
-    postJsonAssertOkAndReturnBody(urlFor(OldRemoveStubMappingTask.class), Json.write(stubbMapping));
+    postJsonAssertOkAndReturnBody(
+        urlFor(RemoveMatchingStubMappingTask.class), Json.write(stubbMapping));
   }
 
   @Override
   public void removeStubMapping(UUID id) {
     executeRequest(
-        adminRoutes.requestSpecForTask(RemoveStubMappingTask.class),
+        adminRoutes.requestSpecForTask(RemoveStubMappingByIdTask.class),
         PathParams.single("id", id),
         Void.class);
   }
@@ -177,7 +181,6 @@ public class HttpAdminClient implements Admin {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public SingleStubMappingResult getStubMapping(UUID id) {
     return executeRequest(
         adminRoutes.requestSpecForTask(GetStubMappingTask.class),
@@ -449,6 +452,15 @@ public class HttpAdminClient implements Admin {
     return safelyExecuteRequest(url, post);
   }
 
+  private String putJsonAssertOkAndReturnBody(String url, String json) {
+    HttpPut post = new HttpPut(url);
+    if (json != null) {
+      post.setEntity(jsonStringEntity(json));
+    }
+
+    return safelyExecuteRequest(url, post);
+  }
+
   protected String getJsonAssertOkAndReturnBody(String url) {
     HttpGet get = new HttpGet(url);
     return safelyExecuteRequest(url, get);
@@ -537,8 +549,13 @@ public class HttpAdminClient implements Admin {
   }
 
   private String urlFor(Class<? extends AdminTask> taskClass) {
+    return urlFor(taskClass, PathParams.empty());
+  }
+
+  private String urlFor(Class<? extends AdminTask> taskClass, PathParams pathParams) {
     RequestSpec requestSpec = adminRoutes.requestSpecForTask(taskClass);
-    checkNotNull(requestSpec, "No admin task URL is registered for " + taskClass.getSimpleName());
-    return String.format(ADMIN_URL_PREFIX + requestSpec.path(), scheme, host, port, urlPathPrefix);
+    requireNonNull(requestSpec, "No admin task URL is registered for " + taskClass.getSimpleName());
+    return String.format(
+        ADMIN_URL_PREFIX + requestSpec.path(pathParams), scheme, host, port, urlPathPrefix);
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2022 Thomas Akehurst
+ * Copyright (C) 2011-2023 Thomas Akehurst
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.github.tomakehurst.wiremock.http;
 
-import static com.github.tomakehurst.wiremock.common.HttpClientUtils.getEntityAsByteArrayAndCloseStream;
+import static com.github.tomakehurst.wiremock.common.HttpClientUtils.getEntityAsByteArray;
 import static com.github.tomakehurst.wiremock.http.Response.response;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 
@@ -25,7 +25,6 @@ import com.github.tomakehurst.wiremock.common.ssl.KeyStoreSettings;
 import com.github.tomakehurst.wiremock.global.GlobalSettings;
 import com.github.tomakehurst.wiremock.store.SettingsStore;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
-import com.google.common.collect.ImmutableList;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -40,7 +39,6 @@ import javax.net.ssl.SSLException;
 import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
 import org.apache.hc.client5.http.entity.GzipCompressingEntity;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.core5.http.*;
 import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
 import org.apache.hc.core5.http.io.entity.InputStreamEntity;
@@ -51,10 +49,10 @@ public class ProxyResponseRenderer implements ResponseRenderer {
   private static final String CONTENT_ENCODING = "content-encoding";
   private static final String CONTENT_LENGTH = "content-length";
   private static final String HOST_HEADER = "host";
-  public static final ImmutableList<String> FORBIDDEN_RESPONSE_HEADERS =
-      ImmutableList.of(TRANSFER_ENCODING, "connection");
-  public static final ImmutableList<String> FORBIDDEN_REQUEST_HEADERS =
-      ImmutableList.of(CONTENT_LENGTH, TRANSFER_ENCODING, "connection");
+  public static final List<String> FORBIDDEN_RESPONSE_HEADERS =
+      List.of(TRANSFER_ENCODING, "connection");
+  public static final List<String> FORBIDDEN_REQUEST_HEADERS =
+      List.of(CONTENT_LENGTH, TRANSFER_ENCODING, "connection");
 
   private final CloseableHttpClient reverseProxyClient;
   private final CloseableHttpClient forwardProxyClient;
@@ -84,7 +82,7 @@ public class ProxyResponseRenderer implements ResponseRenderer {
             proxySettings,
             trustStoreSettings,
             true,
-            Collections.<String>emptyList(),
+            Collections.emptyList(),
             true);
     forwardProxyClient =
         HttpClientFactory.createClient(
@@ -123,20 +121,25 @@ public class ProxyResponseRenderer implements ResponseRenderer {
         || originalRequest.containsHeader(CONTENT_LENGTH)) {
       httpRequest.setEntity(buildEntityFrom(originalRequest));
     }
+
     CloseableHttpClient client = buildClient(serveEvent.getRequest().isBrowserProxyRequest());
-    try (CloseableHttpResponse httpResponse = client.execute(httpRequest)) {
-      return response()
-          .status(httpResponse.getCode())
-          .headers(headersFrom(httpResponse, responseDefinition))
-          .body(getEntityAsByteArrayAndCloseStream(httpResponse))
-          .fromProxy(true)
-          .configureDelay(
-              settings.getFixedDelay(),
-              settings.getDelayDistribution(),
-              responseDefinition.getFixedDelayMilliseconds(),
-              responseDefinition.getDelayDistribution())
-          .chunkedDribbleDelay(responseDefinition.getChunkedDribbleDelay())
-          .build();
+
+    try {
+      return client.execute(
+          httpRequest,
+          httpResponse ->
+              response()
+                  .status(httpResponse.getCode())
+                  .headers(headersFrom(httpResponse, responseDefinition))
+                  .body(getEntityAsByteArray(httpResponse))
+                  .fromProxy(true)
+                  .configureDelay(
+                      settings.getFixedDelay(),
+                      settings.getDelayDistribution(),
+                      responseDefinition.getFixedDelayMilliseconds(),
+                      responseDefinition.getDelayDistribution())
+                  .chunkedDribbleDelay(responseDefinition.getChunkedDribbleDelay())
+                  .build());
     } catch (SSLException e) {
       return proxyResponseError("SSL", httpRequest, e);
     } catch (IOException e) {
@@ -246,7 +249,7 @@ public class ProxyResponseRenderer implements ResponseRenderer {
     ContentTypeHeader contentTypeHeader = originalRequest.contentTypeHeader().or("text/plain");
     ContentType contentType =
         ContentType.create(
-            contentTypeHeader.mimeTypePart(), contentTypeHeader.encodingPart().or("utf-8"));
+            contentTypeHeader.mimeTypePart(), contentTypeHeader.encodingPart().orElse("utf-8"));
 
     if (originalRequest.containsHeader(TRANSFER_ENCODING)
         && originalRequest.header(TRANSFER_ENCODING).firstValue().equals("chunked")) {

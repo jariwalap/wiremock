@@ -15,14 +15,17 @@
  */
 package com.github.tomakehurst.wiremock.common;
 
-import static com.google.common.base.Charsets.UTF_8;
 import static java.lang.System.lineSeparator;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.lang3.StringUtils.getLevenshteinDistance;
 
 import java.nio.charset.Charset;
 import org.apache.commons.lang3.text.WordUtils;
 
 public class Strings {
+
+  private Strings() {}
+
   public static final Charset DEFAULT_CHARSET = UTF_8;
 
   public static String stringFromBytes(byte[] bytes) {
@@ -84,5 +87,9 @@ public class Strings {
 
   public static String normaliseLineBreaks(String s) {
     return s.replace("\r\n", "\n").replace("\n", lineSeparator());
+  }
+
+  public static boolean isNullOrEmpty(String s) {
+    return s == null || s.isEmpty();
   }
 }

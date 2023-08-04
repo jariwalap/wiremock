@@ -16,16 +16,15 @@
 package com.github.tomakehurst.wiremock;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.common.ContentTypes.CONTENT_TYPE;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.github.tomakehurst.wiremock.testsupport.TestFiles.file;
 import static com.github.tomakehurst.wiremock.testsupport.TestHttpHeader.withHeader;
 import static com.github.tomakehurst.wiremock.testsupport.WireMatchers.equalsMultiLine;
 import static com.github.tomakehurst.wiremock.verification.notmatched.PlainTextStubNotMatchedRenderer.CONSOLE_WIDTH_HEADER_KEY;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
@@ -37,6 +36,7 @@ import com.github.tomakehurst.wiremock.extension.requestfilter.RequestWrapper;
 import com.github.tomakehurst.wiremock.extension.requestfilter.StubRequestFilter;
 import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.ResponseDefinition;
+import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.testsupport.WireMockResponse;
 import com.github.tomakehurst.wiremock.testsupport.WireMockTestClient;
 import com.github.tomakehurst.wiremock.verification.notmatched.NotMatchedRenderer;
@@ -141,7 +141,7 @@ public class NotMatchedPageAcceptanceTest {
     WireMockResponse response = testClient.get("/no-stubs-to-match");
 
     assertThat(response.statusCode(), is(404));
-    assertThat(response.firstHeader(CONTENT_TYPE), is("text/plain"));
+    assertThat(response.firstHeader(CONTENT_TYPE), startsWith("text/plain"));
     assertThat(
         response.content(),
         is("No response could be served as there are no stub mappings in this WireMock instance."));
@@ -151,16 +151,17 @@ public class NotMatchedPageAcceptanceTest {
   public void supportsCustomNoMatchRenderer() {
     configure(
         wireMockConfig()
-            .notMatchedRenderer(
-                new NotMatchedRenderer() {
-                  @Override
-                  protected ResponseDefinition render(Admin admin, Request request) {
-                    return ResponseDefinitionBuilder.responseDefinition()
-                        .withStatus(403)
-                        .withBody("No you don't!")
-                        .build();
-                  }
-                }));
+            .notMatchedRendererFactory(
+                extensions ->
+                    new NotMatchedRenderer() {
+                      @Override
+                      protected ResponseDefinition render(Admin admin, ServeEvent serveEvent) {
+                        return ResponseDefinitionBuilder.responseDefinition()
+                            .withStatus(403)
+                            .withBody("No you don't!")
+                            .build();
+                      }
+                    }));
 
     WireMockResponse response = testClient.get("/should-not-match");
 

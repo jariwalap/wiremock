@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2022 Thomas Akehurst
+ * Copyright (C) 2012-2023 Thomas Akehurst
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,17 @@
  */
 package com.github.tomakehurst.wiremock.stubbing;
 
+<<<<<<< HEAD
+=======
+import static java.util.stream.Collectors.toSet;
+
+>>>>>>> 52f574be2ef31690964bbdaaae18e15bddec664d
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.tomakehurst.wiremock.common.Errors;
 import com.github.tomakehurst.wiremock.common.InvalidInputException;
 import com.github.tomakehurst.wiremock.common.Json;
+<<<<<<< HEAD
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 
@@ -31,6 +37,12 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.FluentIterable.from;
 import static java.util.stream.Collectors.toSet;
+=======
+import com.google.common.collect.ImmutableSet;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+>>>>>>> 52f574be2ef31690964bbdaaae18e15bddec664d
 
 public class Scenario {
 
@@ -74,6 +86,7 @@ public class Scenario {
   }
 
   public Set<String> getPossibleStates() {
+<<<<<<< HEAD
     Stream<String> requiredStates =
             stubMappings.stream().map(StubMapping::getRequiredScenarioState);
 
@@ -83,6 +96,17 @@ public class Scenario {
         .append(requiredStates.collect(Collectors.toList()))
         .filter(Objects::nonNull)
         .toSet();
+=======
+    List<String> requiredStates =
+        stubMappings.stream()
+            .map(StubMapping::getRequiredScenarioState)
+            .collect(Collectors.toList());
+
+    requiredStates.addAll(
+        stubMappings.stream().map(StubMapping::getNewScenarioState).collect(Collectors.toList()));
+
+    return requiredStates.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+>>>>>>> 52f574be2ef31690964bbdaaae18e15bddec664d
   }
 
   public Set<StubMapping> getMappings() {
@@ -137,12 +161,7 @@ public class Scenario {
     return Objects.hash(getId(), getState(), getMappings());
   }
 
-  public static final Predicate<Scenario> withName(final String name) {
-    return new Predicate<Scenario>() {
-      @Override
-      public boolean apply(Scenario input) {
-        return input.getId().equals(name);
-      }
-    };
+  public static Predicate<Scenario> withName(final String name) {
+    return input -> input.getId().equals(name);
   }
 }

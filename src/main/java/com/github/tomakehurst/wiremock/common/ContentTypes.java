@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 Thomas Akehurst
+ * Copyright (C) 2016-2023 Thomas Akehurst
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,20 +17,27 @@ package com.github.tomakehurst.wiremock.common;
 
 import static com.github.tomakehurst.wiremock.common.Strings.stringFromBytes;
 import static com.github.tomakehurst.wiremock.common.TextType.JSON;
-import static com.google.common.collect.Iterables.any;
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.StringUtils.substringAfterLast;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.github.tomakehurst.wiremock.common.xml.Xml;
 import com.github.tomakehurst.wiremock.http.ContentTypeHeader;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
 public class ContentTypes {
+
+  private ContentTypes() {}
+
+  public static final String CONTENT_TYPE = "Content-Type";
+  public static final String CONTENT_LENGTH = "Content-Length";
+  public static final String CONTENT_ENCODING = "Content-Encoding";
+  public static final String LOCATION = "Location";
+  public static final String AUTHORIZATION = "Authorization";
+  public static final String COOKIE = "Cookie";
 
   private static final Map<String, String> COMMON_MIME_TYPES =
       ImmutableMap.<String, String>builder()
@@ -120,14 +127,8 @@ public class ContentTypes {
   }
 
   public static boolean determineIsTextFromMimeType(final String mimeType) {
-    return any(
-        TEXT_MIME_TYPE_PATTERNS,
-        new Predicate<String>() {
-          @Override
-          public boolean apply(String pattern) {
-            return mimeType != null && mimeType.matches(pattern);
-          }
-        });
+    return TEXT_MIME_TYPE_PATTERNS.stream()
+        .anyMatch(pattern -> mimeType != null && mimeType.matches(pattern));
   }
 
   public static boolean determineIsText(String extension, String mimeType) {

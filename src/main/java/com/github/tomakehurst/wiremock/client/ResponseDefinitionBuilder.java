@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2022 Thomas Akehurst
+ * Copyright (C) 2011-2023 Thomas Akehurst
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package com.github.tomakehurst.wiremock.client;
 
-import static com.google.common.collect.Lists.newArrayList;
-import static com.google.common.collect.Maps.newHashMap;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.Arrays.asList;
 
@@ -25,7 +23,8 @@ import com.github.tomakehurst.wiremock.common.Json;
 import com.github.tomakehurst.wiremock.extension.Parameters;
 import com.github.tomakehurst.wiremock.http.*;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -35,7 +34,7 @@ public class ResponseDefinitionBuilder {
   protected String statusMessage;
   protected Body body = Body.none();
   protected String bodyFileName;
-  protected List<HttpHeader> headers = newArrayList();
+  protected List<HttpHeader> headers = new ArrayList<>();
   protected Integer fixedDelayMilliseconds;
   protected DelayDistribution delayDistribution;
   protected ChunkedDribbleDelay chunkedDribbleDelay;
@@ -43,7 +42,7 @@ public class ResponseDefinitionBuilder {
   protected String proxyUrlPrefixToRemove;
   protected Fault fault;
   protected List<String> responseTransformerNames;
-  protected Map<String, Object> transformerParameters = newHashMap();
+  protected Map<String, Object> transformerParameters = new HashMap<>();
   protected Boolean wasConfigured = true;
   protected Boolean isScript = false;
 
@@ -53,8 +52,8 @@ public class ResponseDefinitionBuilder {
     builder.statusMessage = responseDefinition.getStatusMessage();
     builder.headers =
         responseDefinition.getHeaders() != null
-            ? newArrayList(responseDefinition.getHeaders().all())
-            : Lists.<HttpHeader>newArrayList();
+            ? new ArrayList<>(responseDefinition.getHeaders().all())
+            : new ArrayList<>();
     builder.body = responseDefinition.getReponseBody();
     builder.bodyFileName = responseDefinition.getBodyFileName();
     builder.fixedDelayMilliseconds = responseDefinition.getFixedDelayMilliseconds();
@@ -72,12 +71,14 @@ public class ResponseDefinitionBuilder {
     builder.isScript = responseDefinition.isResponseBodyAScript();
 
     if (builder.proxyBaseUrl != null) {
-      ProxyResponseDefinitionBuilder proxyResponseDefinitionBuilder = new ProxyResponseDefinitionBuilder(builder);
-      proxyResponseDefinitionBuilder.proxyUrlPrefixToRemove = responseDefinition.getProxyUrlPrefixToRemove();
+      ProxyResponseDefinitionBuilder proxyResponseDefinitionBuilder =
+          new ProxyResponseDefinitionBuilder(builder);
+      proxyResponseDefinitionBuilder.proxyUrlPrefixToRemove =
+          responseDefinition.getProxyUrlPrefixToRemove();
       proxyResponseDefinitionBuilder.additionalRequestHeaders =
-              responseDefinition.getAdditionalProxyRequestHeaders() != null
-                      ? (List<HttpHeader>) responseDefinition.getAdditionalProxyRequestHeaders().all()
-                      : Lists.<HttpHeader>newArrayList();
+          responseDefinition.getAdditionalProxyRequestHeaders() != null
+              ? (List<HttpHeader>) responseDefinition.getAdditionalProxyRequestHeaders().all()
+              : new ArrayList<>();
 
       return proxyResponseDefinitionBuilder;
     }
@@ -223,7 +224,7 @@ public class ResponseDefinitionBuilder {
 
   public static class ProxyResponseDefinitionBuilder extends ResponseDefinitionBuilder {
 
-    private List<HttpHeader> additionalRequestHeaders = newArrayList();
+    private List<HttpHeader> additionalRequestHeaders = new ArrayList<>();
 
     public ProxyResponseDefinitionBuilder(ResponseDefinitionBuilder from) {
       this.status = from.status;
